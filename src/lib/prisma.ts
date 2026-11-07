@@ -6,7 +6,7 @@ export function db(): PrismaClient {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("DATABASE_URL is required");
     globalDb.nourPrisma = new PrismaClient({
-      adapter: new PrismaPg({ connectionString, max: 5, connectionTimeoutMillis: 5000 }),
+      adapter: new PrismaPg({ connectionString, max: 1, connectionTimeoutMillis: 5000 }),
     });
   }
   return globalDb.nourPrisma;

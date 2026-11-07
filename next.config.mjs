@@ -2,7 +2,7 @@
 const nextConfig = {
   poweredByHeader: false,
   distDir: process.env.NOUR_BUILD_DIR || ".next",
-  serverExternalPackages: ["argon2"],
+  serverExternalPackages: ["argon2", "pg"],
   async headers() {
     return [{
       source: "/:path*",

@@ -1,6 +1,6 @@
 import { getTranslation } from "@/lib/i18n/server";
-import { QRCodeSVG } from "qrcode.react";
 import { CheckCircle2, CircleDollarSign } from "lucide-react";
+import StudentQrCode from "@/components/student/student-qr-code";
 import { db } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/guards";
 import { createStudentQrToken } from "@/lib/access/qr";
@@ -42,7 +42,7 @@ export default async function StudentAccountPage() {
       </section>
       <section className="mt-5 rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-5 text-center shadow-card sm:p-7">
         <p className="text-sm font-semibold text-slate-900">{t("Mon QR code d’accès")}</p><p className="mt-1 text-xs text-slate-500">{t("Présentez-le à l’entrée du centre. Il est signé et ne contient jamais votre PIN.")}</p>
-        <div className="mx-auto mt-5 w-fit rounded-3xl border border-blue-100 bg-white p-4 shadow-sm"><QRCodeSVG value={qrToken} size={220} level="M" includeMargin aria-label={`QR code personnel ${user.codeId}`} /></div>
+        <div className="mx-auto mt-5 w-fit rounded-3xl border border-blue-100 bg-white p-4 shadow-sm"><StudentQrCode value={qrToken} codeId={user.codeId} /></div>
         <p className="mt-4 font-mono text-lg font-bold tracking-wider text-primary">{user.codeId}</p>
       </section>
     </main>

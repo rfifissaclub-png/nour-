@@ -56,14 +56,15 @@ Application web responsive de gestion du centre de soutien scolaire NOUR. Elle r
 
    | Variable | Requise | Description |
    |---|---:|---|
-   | `DATABASE_URL` | Oui | URL PostgreSQL utilisée par l’application (pooler transactionnel possible). |
-   | `DIRECT_URL` | Oui | URL PostgreSQL pour Prisma Migrate, de préférence connexion directe ou pooler de session. |
+   | `DATABASE_URL` | Oui | URL Supabase Transaction Pooler (port `6543`) utilisée à l’exécution; ajouter `?pgbouncer=true`. |
+   | `DIRECT_URL` | Oui | URL Supabase directe PostgreSQL (port `5432`) utilisée par Prisma CLI pour générer le client et appliquer les migrations. |
    | `APP_ORIGIN` | Oui | Origine exacte de l’application, sans chemin, par exemple `http://localhost:3000`. En production, utiliser l’origine HTTPS publique. |
    | `AUTH_SECRET` | Oui | Secret aléatoire long pour signer les sessions; ne pas le publier ni le réutiliser dans les tests. |
    | `RESEND_API_KEY` | Pour la récupération Admin | Clé serveur Resend utilisée pour envoyer les codes de vérification et de récupération; ne pas l’exposer au navigateur. |
    | `RECOVERY_EMAIL_FROM` | Pour la récupération Admin | Expéditeur vérifié dans Resend, par exemple `NOUR <securite@votre-domaine.ma>`. |
    | `TRUSTED_IP_HEADER` | Non | En-tête d’adresse client uniquement si un reverse proxy de confiance l’écrase systématiquement. Laisser vide sinon. |
-   | `SUPABASE_URL` | Pour les PDF | URL du projet Supabase. |
+   | `SUPABASE_URL` | Pour les PDF | URL du projet Supabase, utilisée par les appels Storage côté serveur. |
+   | `NEXT_PUBLIC_SUPABASE_URL` | Non | Non utilisée par le code actuel; l’accès PDF utilise `SUPABASE_URL` côté serveur. |
    | `SUPABASE_SERVICE_ROLE_KEY` | Pour les PDF | Clé serveur Supabase; ne jamais l’exposer dans le navigateur ou avec un préfixe `NEXT_PUBLIC_`. |
    | `SUPABASE_STORAGE_BUCKET` | Pour les PDF | Nom du bucket privé; valeur d’exemple : `nour-resources`. |
    | `GOOGLE_SHEETS_SPREADSHEET_ID` | Pour Google Sheets | Identifiant du classeur partagé avec le compte de service. |
@@ -72,6 +73,7 @@ Application web responsive de gestion du centre de soutien scolaire NOUR. Elle r
    | `BACKUP_CRON_SECRET` | Pour le worker | Secret aléatoire d’au moins 32 octets pour autoriser le worker HTTP. |
    | `BACKUP_STORAGE_BUCKET` | Pour la sauvegarde XLSX hebdomadaire | Bucket Supabase Storage **privé**, dédié aux exports automatiques. |
    | `BACKUP_RETENTION_DAYS` | Non | Rétention XLSX hebdomadaire, de 1 à 3650 jours; défaut 365. |
+   | `CRON_SECRET` | Pour le keep-alive Vercel | Secret aléatoire d’au moins 32 octets; Vercel l’envoie dans `Authorization: Bearer ...`. |
 
 5. Appliquer les migrations puis démarrer :
 
@@ -83,6 +85,15 @@ Application web responsive de gestion du centre de soutien scolaire NOUR. Elle r
    Ouvrir [http://localhost:3000/login](http://localhost:3000/login).
 
 Ne pas utiliser les valeurs d’exemple de `.env.example` comme identifiants réels. `DATABASE_URL`, `DIRECT_URL`, les clés Supabase et `AUTH_SECRET` sont des secrets d’exploitation.
+
+### Déploiement Vercel + Supabase
+
+- Choisir Node.js `22.x` ou une version supérieure compatible avec `22.12.0`. `postinstall` et `build` génèrent le client Prisma.
+- Configurer `DATABASE_URL` avec le Transaction Pooler Supabase sur le port `6543` et `pgbouncer=true`. Configurer `DIRECT_URL` avec l’URL PostgreSQL directe sur le port `5432`; Prisma CLI l’utilise pour les migrations.
+- Ajouter les variables de production dans Vercel **Production**, **Preview** et **Development** selon les besoins. Les valeurs de `.env.example` sont des modèles à remplacer, pas des identifiants.
+- Appliquer les migrations depuis un environnement autorisé à joindre `DIRECT_URL` avec `npm run db:deploy`; le build Vercel ne lance pas les migrations automatiquement.
+- Le cron `/api/keep-alive` exécute `SELECT 1` tous les trois jours et requiert `CRON_SECRET`. Vercel Hobby autorise au plus une exécution par jour, avec une précision horaire pouvant varier. Ce ping peut réduire le risque de pause Supabase Free pour inactivité, mais ne garantit ni disponibilité ni sauvegarde et ne remplace pas un plan avec garanties de production.
+- Garder les buckets `SUPABASE_STORAGE_BUCKET` et `BACKUP_STORAGE_BUCKET` privés. `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont utilisés uniquement côté serveur; les téléchargements passent par des routes protégées et des liens signés de courte durée.
 
 ## Base de données et migrations
 
@@ -140,9 +151,11 @@ Les anciens tarifs étaient enregistrés au niveau du groupe. La migration 8 les
   - `/api/backup/data`, `/api/backup/status`, `/api/backup/excel` et `/api/backup/excel/latest` sont réservées à l’Admin.
   - `/api/backup/worker` (POST) traite la file; (GET) demande le full sync et l’archive XLSX hebdomadaire. Les deux méthodes exigent `Authorization: Bearer <BACKUP_CRON_SECRET>`.
 - **Base** : PostgreSQL via Prisma 7 et `@prisma/adapter-pg`. Les modèles principaux sont `User`, `Level`, `SubjectGroup`, `Enrollment`, `Payment`, `PaymentLine`, `Resource`, `AuthSession`, `AuthRateLimit`, `BackupEvent`, `BackupLog` et `BackupWorkerLock`.
+- **Keep-alive** : `/api/keep-alive` exécute `SELECT 1` pour le cron Vercel tous les trois jours; il vérifie `CRON_SECRET` via `Authorization: Bearer ...`.
 - **Paiements** : les montants sont des `Decimal` en base et les calculs financiers utilisent des centimes entiers. Les périodes mensuelles suivent l’heure `Africa/Casablanca`; les commissions sont calculées sur les montants effectivement encaissés et ventilées selon les lignes figées de la facture.
 - **Sauvegarde** : les événements de sauvegarde sont persistés avec la transaction d’inscription ou de paiement. Le worker détient un verrou persistant, traite les événements par lots et réessaie les erreurs avec un délai borné. Google Sheets est une destination externe configurée séparément.
-- **Fichiers** : les PDF résident dans un bucket Supabase Storage privé. Les liens signés de téléchargement sont de courte durée et ne remplacent pas le contrôle d’accès applicatif.
+- **Fichiers** : les PDF résident dans un bucket Supabase Storage privé. Les liens signés de téléchargement sont de courte durée et ne remplacent pas le contrôle d’accès applicatif. Les appels REST utilisant `SUPABASE_SERVICE_ROLE_KEY` sont confinés au module serveur `src/lib/storage/supabase.ts`.
+- **Déploiement serverless** : Prisma 7 utilise `@prisma/adapter-pg`, une instance partagée via `globalThis` par runtime Node et `DATABASE_URL`; le pool de chaque instance est limité à cinq connexions.
 - **Hors ligne** : IndexedDB conserve localement les vues Admin Élèves/Paiements déjà chargées. Ce mode est en lecture seule et n’assure pas le premier chargement sans réseau.
 
 ## Créer le premier compte
