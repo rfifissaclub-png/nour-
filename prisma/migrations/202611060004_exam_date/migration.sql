@@ -1,0 +1,2 @@
+ALTER TABLE "Resource"
+  ADD COLUMN "examAt" TIMESTAMPTZ(3);

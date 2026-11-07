@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum AdminRecoveryPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIAL
+  UNPAID
+}
+
+enum ResourceType {
+  COURSE
+  EXERCISE
+  EXAM
+}
+
+enum BackupEventType {
+  ENROLLMENT_CREATED
+  ENROLLMENT_UPDATED
+  PAYMENT_UPDATED
+  FULL_SYNC_REQUESTED
+}
+
+enum BackupEventStatus {
+  PENDING
+  PROCESSING
+  SYNCED
+  FAILED
+}
+
+enum BackupType {
+  EXCEL
+  GOOGLE_SHEETS
+}
+
+enum BackupStatus {
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  codeId      String   @unique @db.VarChar(32)
+  fullName    String   @db.VarChar(150)
+  phone       String?  @db.VarChar(32)
+  recoveryEmail String? @unique @db.VarChar(254)
+  pin         String   @db.VarChar(255)
+  passwordHash String? @db.VarChar(255)
+  qrVersion   Int      @default(1)
+  role        Role     @default(STUDENT)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  sessions     AuthSession[]
+  recoveryChallenges AdminRecoveryChallenge[]
+
+  taughtGroups SubjectGroup[] @relation("GroupTeacher")
+  enrollments  Enrollment[]   @relation("StudentEnrollments")
+  payments     Payment[]      @relation("StudentPayments")
+  paymentLines PaymentLine[]  @relation("PaymentLineTeacher")
+  resources    Resource[]     @relation("ResourceTeacher")
+
+  @@index([role, isActive])
+  @@index([phone])
+}
+
+model AdminRecoveryChallenge {
+  id        String               @id @default(uuid()) @db.Uuid
+  userId    String               @db.Uuid
+  purpose   AdminRecoveryPurpose
+  email     String               @db.VarChar(254)
+  codeHash  String               @db.VarChar(64)
+  attempts  Int                  @default(0)
+  expiresAt DateTime             @db.Timestamptz(3)
+  createdAt DateTime             @default(now()) @db.Timestamptz(3)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, purpose])
+  @@index([expiresAt])
+}
+
+model Level {
+  id     String @id @default(uuid()) @db.Uuid
+  name   String @unique @db.VarChar(100)
+  groups SubjectGroup[]
+  paymentLines PaymentLine[]
+}
+
+model SubjectGroup {
+  id                String  @id @default(uuid()) @db.Uuid
+  name              String  @db.VarChar(150)
+  monthlyPrice      Decimal @default(0) @db.Decimal(10, 2)
+  teacherPercentage Decimal @db.Decimal(5, 2)
+  levelId           String  @db.Uuid
+  teacherId         String  @db.Uuid
+
+  level       Level        @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  teacher     User         @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  enrollments Enrollment[]
+  resources   Resource[]
+  paymentLines PaymentLine[]
+
+  @@unique([levelId, name])
+  @@index([teacherId])
+}
+
+model Enrollment {
+  id          String   @id @default(uuid()) @db.Uuid
+  studentId   String   @db.Uuid
+  groupId     String   @db.Uuid
+  monthlyPrice Decimal @default(0) @db.Decimal(10, 2)
+  joinedAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  student User         @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Restrict)
+  group   SubjectGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId, groupId])
+  @@index([groupId])
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  studentId   String        @db.Uuid
+  month       Int           @db.SmallInt
+  year        Int           @db.SmallInt
+  totalAmount Decimal       @db.Decimal(10, 2)
+  paidAmount  Decimal       @default(0) @db.Decimal(10, 2)
+  status      PaymentStatus @default(UNPAID)
+  paidAt      DateTime?     @db.Timestamptz(3)
+  note        String?       @db.Text
+
+  student User @relation("StudentPayments", fields: [studentId], references: [id], onDelete: Restrict)
+  lines   PaymentLine[]
+
+  @@unique([studentId, month, year])
+  @@index([year, month, status])
+}
+
+model PaymentLine {
+  id                String   @id @default(uuid()) @db.Uuid
+  paymentId         String   @db.Uuid
+  groupId           String   @db.Uuid
+  levelId           String   @db.Uuid
+  teacherId         String   @db.Uuid
+  groupName         String   @db.VarChar(150)
+  amount            Decimal  @db.Decimal(10, 2)
+  teacherPercentage Decimal  @db.Decimal(5, 2)
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  group             SubjectGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  level             Level    @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  teacher           User     @relation("PaymentLineTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, groupId])
+  @@index([teacherId, paymentId])
+  @@index([levelId, paymentId])
+  @@index([groupId])
+}
+
+model Resource {
+  id           String       @id @default(uuid()) @db.Uuid
+  title        String       @db.VarChar(200)
+  type         ResourceType
+  fileUrl      String?      @db.Text
+  externalLink String?      @db.Text
+  examAt       DateTime?    @db.Timestamptz(3)
+  groupId      String       @db.Uuid
+  teacherId    String       @db.Uuid
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+
+  group   SubjectGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  teacher User         @relation("ResourceTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@index([groupId, type, createdAt])
+  @@index([teacherId])
+}
+
+model AuthSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuthRateLimit {
+  key       String   @id @db.VarChar(64)
+  attempts  Int      @default(1)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
+
+model BackupEvent {
+  id            String            @id @default(uuid()) @db.Uuid
+  type          BackupEventType
+  entityId      String            @db.VarChar(64)
+  payload       Json
+  status        BackupEventStatus @default(PENDING)
+  attempts      Int               @default(0)
+  lastError     String?           @db.Text
+  nextAttemptAt DateTime          @default(now()) @db.Timestamptz(3)
+  lockToken     String?           @db.Uuid
+  lockedUntil   DateTime?         @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  processedAt   DateTime?         @db.Timestamptz(3)
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([lockedUntil])
+}
+
+model BackupLog {
+  id           String      @id @default(uuid()) @db.Uuid
+  type         BackupType
+  status       BackupStatus
+  filename     String?     @db.VarChar(255)
+  storageKey   String?     @db.VarChar(512)
+  recordCount  Int         @default(0)
+  errorMessage String?     @db.Text
+  initiatedBy  String?     @db.Uuid
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([type, status, createdAt])
+}
+
+model BackupWorkerLock {
+  id         Int      @id
+  lockToken  String?  @db.Uuid
+  lockedUntil DateTime? @db.Timestamptz(3)
+}

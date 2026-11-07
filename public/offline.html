@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0052D4">
+    <title>NOUR — consultation hors ligne</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+      body { margin: 0; padding: 1.25rem; }
+      main { max-width: 70rem; margin: 0 auto; }
+      .banner, .notice { border: 1px solid #fcd34d; border-radius: 1rem; background: #fffbeb; padding: 1rem; }
+      .notice { margin-top: 1rem; border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+      .muted { color: #64748b; font-size: .9rem; }
+      .table-wrap { margin-top: 1rem; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 1rem; background: white; }
+      table { width: 100%; border-collapse: collapse; min-width: 42rem; }
+      th, td { padding: .75rem; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+      th { background: #eff6ff; font-size: .8rem; }
+      h1 { color: #1249b5; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Centre NOUR</h1>
+      <div class="banner" role="status">
+        <strong>Mode Hors-Ligne : Affichage de la dernière sauvegarde locale</strong>
+        <p id="updated" class="muted">Dernière mise à jour : recherche de la sauvegarde…</p>
+        <p class="muted">Consultation uniquement — les changements nécessitent une connexion.</p>
+      </div>
+      <div id="notice" class="notice" role="alert" hidden>Impossible d’afficher les données hors ligne : aucune sauvegarde locale disponible.</div>
+      <section id="content" aria-live="polite"></section>
+    </main>
+    <script src="/offline.js" defer></script>
+  </body>
+</html>

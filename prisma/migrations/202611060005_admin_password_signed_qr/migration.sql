@@ -1,0 +1,6 @@
+ALTER TABLE "User"
+ADD COLUMN "passwordHash" VARCHAR(255),
+ADD COLUMN "qrVersion" INTEGER NOT NULL DEFAULT 1;
+
+DELETE FROM "AuthSession"
+WHERE "userId" IN (SELECT "id" FROM "User" WHERE "role" = 'ADMIN');

@@ -1,0 +1,50 @@
+{
+  "id": "/",
+  "name": "Centre NOUR",
+  "short_name": "NOUR",
+  "description": "L'espace scolaire du centre de soutien NOUR.",
+  "lang": "fr-MA",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0052D4",
+  "categories": ["education"],
+  "icons": [
+    {
+      "src": "/icons/nour-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/nour-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/nour-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mon espace élève",
+      "short_name": "Élève",
+      "url": "/student/home",
+      "icons": [{ "src": "/icons/nour-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Scanner à l'entrée",
+      "short_name": "Scanner",
+      "url": "/admin/scan",
+      "icons": [{ "src": "/icons/nour-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

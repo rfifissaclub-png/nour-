@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply max-w-full overflow-x-clip;
+  }
+  body {
+    @apply min-h-screen overflow-x-clip bg-background font-sans text-foreground antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2;
+  }
+}
+
+.nour-grid { background-image: linear-gradient(rgb(255 255 255 / .35) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .35) 1px, transparent 1px); background-size: 56px 56px; }
+summary::-webkit-details-marker { display: none; }
+
+@font-face {
+  font-family: "Nour Sans";
+  src: url("/fonts/nour-sans.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root { --font-sans: "Nour Sans"; }
+
+.field-control {
+  @apply h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70;
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  .access-card-print, .access-card-print * { visibility: visible !important; }
+  .access-card-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; border: 0 !important; box-shadow: none !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+html[dir="rtl"] { --font-sans: Tahoma, Arial; }
+html[dir="rtl"] .tracking-wide, html[dir="rtl"] .tracking-tight { letter-spacing: normal; }
+/* Chromium exposes negative RTL overflow from scroll containers as page-wide
+   overflow. Keep the scroller LTR and restore RTL inside its content. */
+html[dir="rtl"] .overflow-x-auto { direction: ltr; }
+html[dir="rtl"] .overflow-x-auto > * { direction: rtl; }
+html[dir="rtl"] nav.overflow-x-auto { flex-direction: row-reverse; }
+input[type="tel"], input[type="email"], input[type="number"], input[type="month"], .font-mono { direction: ltr; unicode-bidi: isolate; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

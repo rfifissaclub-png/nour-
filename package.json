@@ -1,0 +1,60 @@
+{
+  "name": "nour-centre",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "account:create": "node --import tsx scripts/create-account.ts",
+    "account:set-admin-password": "node --import tsx scripts/set-admin-password.ts",
+    "loadtest:seed": "node --import tsx scripts/seed-load-test.ts",
+    "loadtest:clean": "node --import tsx scripts/clean-load-test.ts"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "argon2": "^0.44.0",
+    "dotenv": "^17.0.0",
+    "exceljs": "^4.4.0",
+    "googleapis": "^189.0.0",
+    "html5-qrcode": "^2.3.8",
+    "idb": "^8.0.4",
+    "jose": "^6.0.0",
+    "libphonenumber-js": "^1.12.0",
+    "lucide-react": "^0.468.0",
+    "next": "^16.4.5",
+    "pg": "^8.16.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.0",
+    "fake-indexeddb": "^6.2.7",
+    "postcss": "8.5.32",
+    "prisma": "^7.0.0",
+    "tailwindcss": "3.4.17",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "type": "module",
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
+  }
+}
