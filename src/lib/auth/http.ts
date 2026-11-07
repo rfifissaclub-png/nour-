@@ -5,9 +5,29 @@ export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 export function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
   const expected = process.env.APP_ORIGIN;
-  if (!expected) throw new Error("APP_ORIGIN is required");
-  return request.headers.get("origin") === new URL(expected).origin;
+  if (expected) {
+    try {
+      if (origin === new URL(expected).origin) return true;
+    } catch {
+      // Format URL invalide dans process.env.APP_ORIGIN, passer au fallback
+    }
+  }
+
+  // Fallback Vercel / proxy : comparer l'origine avec le host courant
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (host) {
+    try {
+      if (new URL(origin).host === host) return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 export async function readJsonBody(request: NextRequest, maxBytes = 2048) {
   if (!request.headers.get("content-type")?.includes("application/json")) {
