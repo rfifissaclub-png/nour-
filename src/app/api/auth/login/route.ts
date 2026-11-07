@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set(COOKIE_NAME, token, { ...COOKIE_OPTIONS, maxAge: SESSION_SECONDS });
     return response;
   } catch (error) {
-    console.error("NOUR login unavailable:", error instanceof Error ? error.message : error);
+    console.error("NOUR login unavailable:", error instanceof Error ? `${error.message} | ${error.stack?.replace(/\n/g, " -> ")}` : String(error));
     return json({ message: "Connexion momentanément indisponible. Veuillez réessayer dans quelques instants." }, 503);
   }
 }
