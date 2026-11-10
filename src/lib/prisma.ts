@@ -4,11 +4,26 @@ import { Pool } from "pg";
 
 const globalDb = globalThis as unknown as { nourPrisma?: PrismaClient; nourPgPool?: Pool };
 
+function normalizeConnectionString(value: string): string {
+  try {
+    const url = new URL(value);
+    // pg's connection-string parser can let sslmode=require/verify-full
+    // override the Pool ssl object. Vercel's Supabase integration may include
+    // those parameters while its CA chain is not available in the function.
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("uselibpqcompat");
+    return url.toString();
+  } catch {
+    return value.replace(/([?&])sslmode=[^&]*&?/i, "$1").replace(/[?&]uselibpqcompat=[^&]*&?/i, "?");
+  }
+}
+
 export function db(): PrismaClient {
   if (!globalDb.nourPrisma) {
     // Prefer the Supabase/Vercel integration URL when both the legacy Vercel
     // DATABASE_URL and the Nour Supabase connection are present.
-    const connectionString = process.env.POSTGRES_PRISMA_URL ?? process.env.DATABASE_URL;
+    const rawConnectionString = process.env.POSTGRES_PRISMA_URL ?? process.env.DATABASE_URL;
+    const connectionString = rawConnectionString ? normalizeConnectionString(rawConnectionString) : undefined;
     if (!connectionString) throw new Error("POSTGRES_PRISMA_URL or DATABASE_URL is required");
 
     const pool = new Pool({
