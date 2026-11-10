@@ -6,8 +6,10 @@ const globalDb = globalThis as unknown as { nourPrisma?: PrismaClient; nourPgPoo
 
 export function db(): PrismaClient {
   if (!globalDb.nourPrisma) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error("DATABASE_URL is required");
+    // Prefer the Supabase/Vercel integration URL when both the legacy Vercel
+    // DATABASE_URL and the Nour Supabase connection are present.
+    const connectionString = process.env.POSTGRES_PRISMA_URL ?? process.env.DATABASE_URL;
+    if (!connectionString) throw new Error("POSTGRES_PRISMA_URL or DATABASE_URL is required");
 
     const pool = new Pool({
       connectionString,
@@ -23,4 +25,3 @@ export function db(): PrismaClient {
   }
   return globalDb.nourPrisma;
 }
-
