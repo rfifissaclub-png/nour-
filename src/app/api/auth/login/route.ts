@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
       if (!accountLimit.allowed) return limited(accountLimit.retryAfter);
     }
     const valid = user?.role === "ADMIN"
-      ? await verifyAdminPassword(user.passwordHash ?? undefined, password)
+      ? (password.length > 0
+          ? await verifyAdminPassword(user.passwordHash ?? undefined, password)
+          : await verifyPin(user?.pin, pin))
       : await verifyPin(user?.pin, pin);
     if (!user || !valid) return json({ message: "Identifiant ou code secret incorrect. Si le téléphone est partagé, utilisez votre Code ID." }, 401);
     if (!user.isActive) {
